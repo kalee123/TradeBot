@@ -1,0 +1,17 @@
+kite:
+  api-key: 1av6cdzewa20eypy
+  api-secret: p6ggvfij4ulpf41hl2kax8xi8x92r2xv
+  user-id: QEX463
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trade_db?currentSchema=tradedb
+    username: root
+    password: ""
+  jpa:
+    hibernate:
+      ddl-auto: update     # use 'validate' once schema is stable
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect

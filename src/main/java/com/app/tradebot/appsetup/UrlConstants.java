@@ -1,0 +1,17 @@
+package com.app.tradebot.appsetup;
+
+public class UrlConstants {
+
+    public static final String KITE_LOGIN_URL = "https://kite.zerodha.com/connect/login?api_key=%s&v=3&state=%s";
+
+    public static final String BASE_URL = "https://api.kite.trade";
+
+    public static final String KITE_TOKEN_EXCHANGE_URL = "https://api.kite.trade/session/token";
+
+    public static final String KITE_USER_PROFILE_URL = "https://api.kite.trade/user/profile";
+
+    public static final String KITE_USER_PROFILE_PATH = "/user/profile";
+
+    public static final String KITE_USER_MARGINS_PATH = "/user/margins";
+
+}
