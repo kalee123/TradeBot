@@ -3,7 +3,6 @@ package com.app.tradebot.service;
 import com.app.tradebot.appsetup.UrlConstants;
 import com.app.tradebot.config.KiteProperties;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -48,54 +47,11 @@ public class KiteAuthService {
             if (accessToken == null) {
                 throw new RuntimeException("access_token not found in response: " + response);
             }
-
-            // Step 2: Delegate persistence to appropriate services
-//            persistAuthenticationData(accessToken, requestToken);
-
-            return "success";
+            return accessToken;
         } else {
             throw new RuntimeException("Token exchange failed: " + status + " " + response);
         }
     }
-
-    /**
-     * Persist authentication data after successful token exchange
-     * Delegates to UserService and TokenService
-     */
-//    private void persistAuthenticationData(String accessToken, String requestToken) throws Exception {
-//        try {
-//            // Get user profile from Kite API
-//            String userData = kiteUserService.getUserProfile(accessToken);
-//            JSONObject userJson = new JSONObject(userData);
-//            JSONObject data = userJson.optJSONObject("data");
-//
-//            if (data != null) {
-//                String userId = data.optString("user_id");
-//                String email = data.optString("email");
-//                String broker = data.optString("broker");
-//                String name = data.optString("user_name");
-//                String phone = data.optString("phone");
-//
-//                // Step 1: Save user profile using UserService
-//                userService.saveUser(userId, name, email, phone, broker);
-//
-//                // Step 2: Save access token using TokenService (with expiry)
-//                tokenService.saveAccessToken(userId, accessToken, requestToken, 24); // 24 hour expiry
-//
-//                System.out.println("User " + userId + " authenticated and data persisted successfully");
-//            }
-//        } catch (Exception e) {
-//            throw new RuntimeException("Failed to persist authentication data: " + e.getMessage(), e);
-//        }
-//    }
-//
-//    public String getAccessTokenForUser(String userId) throws Exception {
-//        return tokenService.getAccessToken(userId);
-//    }
-//
-//    public void revokeUserSession(String userId) throws Exception {
-//        tokenService.revokeToken(userId);
-//    }
 
     private static String encode(String s) {
         return java.net.URLEncoder.encode(s, StandardCharsets.UTF_8);

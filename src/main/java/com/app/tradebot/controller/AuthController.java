@@ -1,9 +1,7 @@
 package com.app.tradebot.controller;
 
 import com.app.tradebot.appsetup.FieldConstants;
-import com.app.tradebot.entity.UserEntity;
-import com.app.tradebot.repository.UserRepository;
-import com.app.tradebot.service.KiteAuthService;
+import com.app.tradebot.authentication.UserAuthService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -20,30 +18,14 @@ import java.util.UUID;
 public class AuthController {
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    KiteAuthService authService;
-
-    @GetMapping("/test")
-    @ResponseBody
-    public String test() {
-        UserEntity user = new UserEntity();
-        user.setUserName("kalidas");
-        user.setEmail("kalidas@gmail.com");
-        user.setUserBrokerId("qisdo10");
-        UserEntity savedUser = userRepository.save(user);
-        System.out.println(savedUser.getUserId());
-        return "Hello, World!"+savedUser.getUserId();
-//        return ResponseEntity.ok("Hello, World!"+savedUser.getUserId());
-    }
+    UserAuthService userAuthService;
 
     @GetMapping("/login")
     @ResponseBody
     public ResponseEntity<Void> login(HttpSession session) {
         String state = UUID.randomUUID().toString();
         session.setAttribute(FieldConstants.FIELD_KIETE_STATE, state);
-        String url = authService.getLoginUrl(state);
+        String url = userAuthService.getLoginUrl(state);
         return ResponseEntity.status(302).header(HttpHeaders.LOCATION, url).build();
     }
 
@@ -54,8 +36,12 @@ public class AuthController {
             return ResponseEntity.badRequest().body("Invalid state");
         }
         try {
-            String accessToken = authService.exchangeRequestTokenForAccessToken(request_token);
-            return ResponseEntity.ok(accessToken);
+            String response = userAuthService.authenticateUser(request_token);
+            if(response.equals("success")) {
+                return ResponseEntity.ok("Authentication successful");
+            } else {
+                return ResponseEntity.status(500).body("Authentication failed: " + response);
+            }
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Token exchange failed: " + e.getMessage());
         }
