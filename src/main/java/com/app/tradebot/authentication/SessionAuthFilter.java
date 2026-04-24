@@ -1,5 +1,6 @@
 package com.app.tradebot.authentication;
 
+import com.app.tradebot.appsetup.FieldConstants;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,14 +20,17 @@ public class SessionAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
+        Boolean auth = (Boolean) request.getSession().getAttribute(FieldConstants.FIELD_USER_AUTH);
 
-        // allow public URLs
+        if ("/login".equals(path) && auth != null && auth) {
+            response.sendRedirect("/dashboard");
+            return;
+        }
+
         if (path.equals("/login") || path.equals("/kite/callback")) {
             chain.doFilter(request, response);
             return;
         }
-
-        Boolean auth = (Boolean) request.getSession().getAttribute("USER_AUTH");
 
         if (auth == null || !auth) {
             response.setStatus(401);

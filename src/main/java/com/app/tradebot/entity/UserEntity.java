@@ -96,4 +96,7 @@ public class UserEntity {
     public int hashCode() {
         return Objects.hash(userId);
     }
+
+    public void addAuthToken(AuthTokenEntity token) {
+    }
 }
