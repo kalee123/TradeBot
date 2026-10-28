@@ -5,6 +5,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -38,6 +40,9 @@ public class UserEntity {
 
     @Column(name = "user_broker_id", unique = true, length = 20)
     private String userBrokerId;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<AuthTokenEntity> authTokens = new ArrayList<>();
 
     public Long getUserId() {
         return userId;
@@ -97,6 +102,12 @@ public class UserEntity {
         return Objects.hash(userId);
     }
 
+    public List<AuthTokenEntity> getAuthTokens() {
+        return authTokens;
+    }
+
     public void addAuthToken(AuthTokenEntity token) {
+        token.setUser(this);
+        authTokens.add(token);
     }
 }

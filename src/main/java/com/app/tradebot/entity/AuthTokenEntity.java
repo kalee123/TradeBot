@@ -33,12 +33,54 @@ public class AuthTokenEntity {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    public Long getId() {
+        return id;
+    }
+
+    public UserEntity getUser() {
+        return user;
+    }
+    public void setUser(UserEntity user) {
+        this.user = user;
+    }
+
+    public String getAccessToken() {
+        return accessToken;
+    }
     public void setAccessToken(String accessToken) {
+        this.accessToken = accessToken;
     }
 
-    public void setApiKey(String yourApiKey) {
+    public String getApiKey() {
+        return apiKey;
+    }
+    public void setApiKey(String apiKey) {
+        this.apiKey = apiKey;
     }
 
-    public void setExpiresAt(LocalDateTime localDateTime) {
+    public LocalDateTime getIssuedAt() {
+        return issuedAt;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+    public void setActive(boolean active) {
+        this.active = active;
+    }
+
+    public boolean isExpired() {
+        return expiresAt == null || !expiresAt.isAfter(LocalDateTime.now());
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 }
