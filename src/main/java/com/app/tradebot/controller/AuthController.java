@@ -2,6 +2,8 @@ package com.app.tradebot.controller;
 
 import com.app.tradebot.appsetup.FieldConstants;
 import com.app.tradebot.authentication.UserAuthService;
+import com.app.tradebot.entity.AuthTokenEntity;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -30,20 +32,27 @@ public class AuthController {
     }
 
     @GetMapping("/kite/callback")
-    public ResponseEntity<String> callback(String request_token, String state, HttpSession session) {
+    public ResponseEntity<String> callback(String request_token, String state, HttpServletRequest request) {
+        HttpSession session = request.getSession();
         String saved = (String) session.getAttribute(FieldConstants.FIELD_KIETE_STATE);
-        if (state != null && saved != null && !saved.equals(state)) {
+        session.removeAttribute(FieldConstants.FIELD_KIETE_STATE);
+        if (state == null || saved == null || !saved.equals(state)) {
             return ResponseEntity.badRequest().body("Invalid state");
         }
+        if (request_token == null || request_token.isBlank()) {
+            return ResponseEntity.badRequest().body("Missing request_token");
+        }
         try {
-            String response = userAuthService.authenticateUser(request_token);
-            if(response.equals("success")) {
-                return ResponseEntity.ok("Authentication successful");
-            } else {
-                return ResponseEntity.status(500).body("Authentication failed: " + response);
-            }
+            AuthTokenEntity token = userAuthService.authenticateUser(request_token);
+
+            // New session id after login to prevent session fixation
+            request.changeSessionId();
+            session.setAttribute(FieldConstants.FIELD_USER_AUTH, true);
+            session.setAttribute(FieldConstants.FIELD_USER_ID, token.getUser().getUserId());
+            session.setAttribute(FieldConstants.FIELD_TOKEN_EXPIRES_AT, token.getExpiresAt());
+            return ResponseEntity.ok("Authentication successful");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Token exchange failed: " + e.getMessage());
+            return ResponseEntity.status(500).body("Authentication failed: " + e.getMessage());
         }
     }
 }

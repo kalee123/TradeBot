@@ -1,4 +1,4 @@
-package com.app.tradebot.config;
+package com.app.tradebot.broker.kite;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

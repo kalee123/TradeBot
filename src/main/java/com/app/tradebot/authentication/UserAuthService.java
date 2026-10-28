@@ -1,78 +1,77 @@
 package com.app.tradebot.authentication;
 
-import com.app.tradebot.appsetup.UrlConstants;
-import com.app.tradebot.config.KiteApiClient;
+import com.app.tradebot.broker.BrokerAuthClient;
+import com.app.tradebot.broker.BrokerSession;
 import com.app.tradebot.entity.AuthTokenEntity;
 import com.app.tradebot.entity.UserEntity;
+import com.app.tradebot.repository.AuthTokenRepository;
 import com.app.tradebot.repository.UserRepository;
-import com.app.tradebot.service.KiteAuthService;
-import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-
-import static com.app.tradebot.appsetup.UrlConstants.BASE_URL;
-import static com.app.tradebot.appsetup.UrlConstants.KITE_USER_PROFILE_PATH;
+import java.util.Optional;
 
 @Service
 public class UserAuthService {
 
-    @Autowired
-    KiteAuthService authService;
+    private final BrokerAuthClient brokerAuthClient;
+    private final UserRepository userRepository;
+    private final AuthTokenRepository authTokenRepository;
 
-    @Autowired
-    @Lazy
-    private UserRepository userRepository;
-
-    @Autowired
-    @Lazy
-    private KiteApiClient kiteApiClient;
+    public UserAuthService(BrokerAuthClient brokerAuthClient,
+                           UserRepository userRepository,
+                           AuthTokenRepository authTokenRepository) {
+        this.brokerAuthClient = brokerAuthClient;
+        this.userRepository = userRepository;
+        this.authTokenRepository = authTokenRepository;
+    }
 
     public String getLoginUrl(String state) {
-        return authService.getLoginUrl(state);
+        return brokerAuthClient.getLoginUrl(state);
     }
 
-    public String authenticateUser(String requestToken) {
-        try{
-            String accessToken = authService.exchangeRequestTokenForAccessToken(requestToken);
-            getUserInfo(accessToken);
-            return accessToken;
-        }
-        catch (Exception e) {
-            throw new RuntimeException("access_token not found in response: " + e);
-        }
-    }
-
-    public String getUserInfo(String accessToken) {
-        String profileDetails = null;
+    /**
+     * Exchanges the broker request_token for an access token and persists it.
+     * Returns the stored token so the caller can set up the user session.
+     */
+    @Transactional
+    public AuthTokenEntity authenticateUser(String requestToken) {
+        BrokerSession session;
         try {
-            profileDetails = kiteApiClient.get(UrlConstants.KITE_USER_PROFILE_PATH, accessToken);
-            JSONObject userInfo = new JSONObject(profileDetails);
-            JSONObject userJson = userInfo.getJSONObject("data");
-            String name= userJson.optString("user_name", "Unknown");
-            String userId = userJson.optString("user_id", "Unknown");
-            String email = userJson.optString("email", "Unknown");
-            String broker = userJson.optString("broker", "Unknown");
-
-            UserEntity user = new UserEntity();
-            user.setUserName(name);
-            user.setEmail(email);
-            user.setBroker(broker);
-            user.setUserBrokerId(userId);
-
-            AuthTokenEntity token = new AuthTokenEntity();
-            token.setAccessToken(accessToken);
-            token.setApiKey("YOUR_API_KEY");
-            token.setExpiresAt(LocalDateTime.now().plusHours(12));
-            user.addAuthToken(token);
-
-            userRepository.save(user);
-
+            session = brokerAuthClient.createSession(requestToken);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Token exchange failed: " + e.getMessage(), e);
         }
-        return profileDetails;
+        return saveSession(session);
+    }
+
+    private AuthTokenEntity saveSession(BrokerSession session) {
+        // Upsert the user: same broker user id logging in again reuses the existing row
+        UserEntity user = userRepository.findByUserBrokerId(session.userBrokerId())
+                .orElseGet(UserEntity::new);
+        user.setUserBrokerId(session.userBrokerId());
+        user.setUserName(session.userName());
+        user.setEmail(session.email());
+        user.setBroker(session.broker());
+
+        // Only one active token per user; older ones are kept for audit but deactivated
+        user.getAuthTokens().forEach(t -> t.setActive(false));
+
+        AuthTokenEntity token = new AuthTokenEntity();
+        token.setAccessToken(session.accessToken());
+        token.setApiKey(brokerAuthClient.getApiKey());
+        token.setExpiresAt(session.expiresAt());
+        user.addAuthToken(token);
+
+        userRepository.save(user);
+        return token;
+    }
+
+    /** Active, non-expired access token for API calls on behalf of the user. */
+    @Transactional(readOnly = true)
+    public Optional<String> getActiveAccessToken(Long userId) {
+        return authTokenRepository.findTopByUser_UserIdAndActiveTrueOrderByIssuedAtDesc(userId)
+                .filter(t -> !t.isExpired())
+                .map(AuthTokenEntity::getAccessToken);
     }
 }
