@@ -2,7 +2,7 @@ package com.app.tradebot.appsetup;
 
 public class UrlConstants {
 
-    public static final String KITE_LOGIN_URL = "https://kite.zerodha.com/connect/login?api_key=%s&v=3&state=%s";
+    public static final String KITE_LOGIN_URL = "https://kite.zerodha.com/connect/login?api_key=%s&v=3&redirect_params=%s";
 
     public static final String BASE_URL = "https://api.kite.trade";
 

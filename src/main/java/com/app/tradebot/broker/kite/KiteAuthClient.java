@@ -6,6 +6,7 @@ import com.app.tradebot.broker.BrokerSession;
 import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -27,7 +28,9 @@ public class KiteAuthClient implements BrokerAuthClient {
 
     @Override
     public String getLoginUrl(String state) {
-        return String.format(UrlConstants.KITE_LOGIN_URL, props.getApiKey(), state);
+        // Kite drops unknown query params; only redirect_params is echoed back to the callback
+        String redirectParams = URLEncoder.encode("state=" + state, StandardCharsets.UTF_8);
+        return String.format(UrlConstants.KITE_LOGIN_URL, props.getApiKey(), redirectParams);
     }
 
     @Override

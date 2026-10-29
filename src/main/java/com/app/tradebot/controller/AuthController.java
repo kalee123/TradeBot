@@ -36,7 +36,7 @@ public class AuthController {
         HttpSession session = request.getSession();
         String saved = (String) session.getAttribute(FieldConstants.FIELD_KIETE_STATE);
         session.removeAttribute(FieldConstants.FIELD_KIETE_STATE);
-        if (state == null || saved == null || !saved.equals(state)) {
+        if (saved == null || !saved.equals(state)) {
             return ResponseEntity.badRequest().body("Invalid state");
         }
         if (request_token == null || request_token.isBlank()) {
@@ -54,5 +54,14 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body("Authentication failed: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/dashboard")
+    @ResponseBody
+    public ResponseEntity<Void> dashBoard(HttpSession session) {
+        String state = UUID.randomUUID().toString();
+        session.setAttribute(FieldConstants.FIELD_KIETE_STATE, state);
+        String url = userAuthService.getLoginUrl(state);
+        return ResponseEntity.status(302).header(HttpHeaders.LOCATION, url).build();
     }
 }
