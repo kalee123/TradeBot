@@ -28,6 +28,11 @@ public class SessionAuthFilter extends OncePerRequestFilter {
         HttpSession session = request.getSession(false);
         boolean auth = isAuthenticated(session);
 
+        if ("/".equals(path)) {
+            response.sendRedirect(auth ? "/dashboard" : "/login");
+            return;
+        }
+
         if ("/login".equals(path) && auth) {
             response.sendRedirect("/dashboard");
             return;
@@ -39,8 +44,7 @@ public class SessionAuthFilter extends OncePerRequestFilter {
         }
 
         if (!auth) {
-            response.setStatus(401);
-            response.getWriter().write("Not logged in");
+            response.sendRedirect("/login");
             return;
         }
 
