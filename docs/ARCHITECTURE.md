@@ -1,4 +1,4 @@
-# TradeBot — Architecture
+# AlgoDesk — Architecture
 
 Target architecture for an automated trading system on **Zerodha Kite Connect v3**, built on
 Spring Boot 3.3 / Java 17.
@@ -45,19 +45,19 @@ Required actions, in order:
 3. Purge from history (`git filter-repo`) or, if the repo has never been pushed anywhere, accept
    the history and rely on rotation.
 
-**2. `AuthTokenEntity` setters are empty method bodies.** — [AuthTokenEntity.java:36-44](../src/main/java/com/app/tradebot/entity/AuthTokenEntity.java#L36-L44)
+**2. `AuthTokenEntity` setters are empty method bodies.** — [AuthTokenEntity.java:36-44](../src/main/java/com/app/algodesk/entity/AuthTokenEntity.java#L36-L44)
 
 `setAccessToken`, `setApiKey`, and `setExpiresAt` have no bodies. Every call is a silent no-op,
 so the token object is always empty. There are no getters at all.
 
-**3. `UserEntity.addAuthToken()` is an empty method and there is no relationship mapping.** — [UserEntity.java:100](../src/main/java/com/app/tradebot/entity/UserEntity.java#L100)
+**3. `UserEntity.addAuthToken()` is an empty method and there is no relationship mapping.** — [UserEntity.java:100](../src/main/java/com/app/algodesk/entity/UserEntity.java#L100)
 
 `UserEntity` has no `@OneToMany` to `AuthTokenEntity`, so nothing cascades. Combined with #2, the
 access token is **never persisted anywhere** — it is fetched and discarded.
 
-**4. A successful login returns HTTP 500 and leaks the raw access token.** — [AuthController.java:40-43](../src/main/java/com/app/tradebot/controller/AuthController.java#L40-L43)
+**4. A successful login returns HTTP 500 and leaks the raw access token.** — [AuthController.java:40-43](../src/main/java/com/app/algodesk/controller/AuthController.java#L40-L43)
 
-`userAuthService.authenticateUser()` returns the **access token** ([UserAuthService.java:41](../src/main/java/com/app/tradebot/authentication/UserAuthService.java#L41)),
+`userAuthService.authenticateUser()` returns the **access token** ([UserAuthService.java:41](../src/main/java/com/app/algodesk/authentication/UserAuthService.java#L41)),
 but the controller compares it to the string `"success"`. That comparison can never be true, so the
 success path is dead code and every login falls into:
 
@@ -69,12 +69,12 @@ which writes the Zerodha access token into an HTTP response body sent to the bro
 in one line: the flow never succeeds, and it exposes the credential that authorises trades on the
 user's account.
 
-**5. `USER_AUTH` is read but never written.** — [SessionAuthFilter.java:23](../src/main/java/com/app/tradebot/authentication/SessionAuthFilter.java#L23)
+**5. `USER_AUTH` is read but never written.** — [SessionAuthFilter.java:23](../src/main/java/com/app/algodesk/authentication/SessionAuthFilter.java#L23)
 
 `FieldConstants.FIELD_USER_AUTH` has exactly one usage — the read in the filter. No code ever sets
 it. So even if #4 were fixed, every request after callback returns `401 Not logged in`.
 
-**6. The CSRF `state` check is bypassable.** — [AuthController.java:35](../src/main/java/com/app/tradebot/controller/AuthController.java#L35)
+**6. The CSRF `state` check is bypassable.** — [AuthController.java:35](../src/main/java/com/app/algodesk/controller/AuthController.java#L35)
 
 ```java
 if (state != null && saved != null && !saved.equals(state)) { ... reject ... }
@@ -84,13 +84,13 @@ If the attacker omits `state` from the callback URL, `state == null` short-circu
 and the request is accepted. Invert it: reject unless `saved != null && saved.equals(state)`, and
 clear the session attribute after a single use so a valid state cannot be replayed.
 
-**7. Every login inserts a duplicate user.** — [UserAuthService.java:59](../src/main/java/com/app/tradebot/authentication/UserAuthService.java#L59)
+**7. Every login inserts a duplicate user.** — [UserAuthService.java:59](../src/main/java/com/app/algodesk/authentication/UserAuthService.java#L59)
 
 `getUserInfo` unconditionally does `new UserEntity()` + `save()`. `UserRepository` already has
 `findByUserBrokerId` — this should be an upsert on the Kite `user_id`. As written, the second login
 by the same user violates the `user_broker_id` unique constraint.
 
-**8. Two competing authentication mechanisms.** — [SecurityConfig.java](../src/main/java/com/app/tradebot/authentication/SecurityConfig.java), [SessionAuthFilter.java](../src/main/java/com/app/tradebot/authentication/SessionAuthFilter.java)
+**8. Two competing authentication mechanisms.** — [SecurityConfig.java](../src/main/java/com/app/algodesk/authentication/SecurityConfig.java), [SessionAuthFilter.java](../src/main/java/com/app/algodesk/authentication/SessionAuthFilter.java)
 
 `SessionAuthFilter` writes its own `401` and never populates the `SecurityContext`; the chain then
 also declares `.anyRequest().authenticated()`. Two independent gates, neither aware of the other.
@@ -100,19 +100,19 @@ Pick one — see [B.3](#b3-authentication--session).
 
 | Issue | Location | Fix |
 |---|---|---|
-| `hashCode()` returns constant `0` | [UserEntity.java:96](../src/main/java/com/app/tradebot/entity/UserEntity.java#L96) | Return `getClass().hashCode()` — stable across the JPA lifecycle, unlike hashing a generated id |
-| Hardcoded `"YOUR_API_KEY"` | [UserAuthService.java:67](../src/main/java/com/app/tradebot/authentication/UserAuthService.java#L67) | Inject `KiteProperties` |
-| Expiry hardcoded to `+12h` | [UserAuthService.java:68](../src/main/java/com/app/tradebot/authentication/UserAuthService.java#L68) | Kite tokens die at a fixed wall-clock time each morning, not 12h after issue — see [B.3](#b3-authentication--session) |
-| `schema = "tradedb"` on `AuthTokenEntity` only | [AuthTokenEntity.java:7](../src/main/java/com/app/tradebot/entity/AuthTokenEntity.java#L7) | Drop it; set the schema once via `spring.jpa.properties.hibernate.default_schema` |
-| No connect/read timeouts | [KiteApiClient.java](../src/main/java/com/app/tradebot/config/KiteApiClient.java) | A hung Kite socket blocks a request thread indefinitely. Replace with `RestClient` (B.4) |
-| `@Scope("request")` on a controller | [AuthController.java:17](../src/main/java/com/app/tradebot/controller/AuthController.java#L17) | Meaningless on a stateless `@RestController`; remove |
-| `@Lazy` on repository injection | [UserAuthService.java:26-32](../src/main/java/com/app/tradebot/authentication/UserAuthService.java#L26-L32) | Papers over a wiring problem rather than fixing it; remove and use constructor injection |
+| `hashCode()` returns constant `0` | [UserEntity.java:96](../src/main/java/com/app/algodesk/entity/UserEntity.java#L96) | Return `getClass().hashCode()` — stable across the JPA lifecycle, unlike hashing a generated id |
+| Hardcoded `"YOUR_API_KEY"` | [UserAuthService.java:67](../src/main/java/com/app/algodesk/authentication/UserAuthService.java#L67) | Inject `KiteProperties` |
+| Expiry hardcoded to `+12h` | [UserAuthService.java:68](../src/main/java/com/app/algodesk/authentication/UserAuthService.java#L68) | Kite tokens die at a fixed wall-clock time each morning, not 12h after issue — see [B.3](#b3-authentication--session) |
+| `schema = "tradedb"` on `AuthTokenEntity` only | [AuthTokenEntity.java:7](../src/main/java/com/app/algodesk/entity/AuthTokenEntity.java#L7) | Drop it; set the schema once via `spring.jpa.properties.hibernate.default_schema` |
+| No connect/read timeouts | [KiteApiClient.java](../src/main/java/com/app/algodesk/config/KiteApiClient.java) | A hung Kite socket blocks a request thread indefinitely. Replace with `RestClient` (B.4) |
+| `@Scope("request")` on a controller | [AuthController.java:17](../src/main/java/com/app/algodesk/controller/AuthController.java#L17) | Meaningless on a stateless `@RestController`; remove |
+| `@Lazy` on repository injection | [UserAuthService.java:26-32](../src/main/java/com/app/algodesk/authentication/UserAuthService.java#L26-L32) | Papers over a wiring problem rather than fixing it; remove and use constructor injection |
 | Field injection throughout | `UserAuthService`, `AuthController` | Constructor injection — makes dependencies explicit and testable |
 | `org.json` used but not declared | `KiteAuthService`, `UserAuthService`, `utilityHelper` | Arrives transitively via `kiteconnect`. Either declare it, or standardise on Jackson (already on the classpath via `spring-boot-starter-web`) |
 | `ddl-auto: update` | [application.yml](../src/main/resources/application.yml) | Never for a system holding trade records. Flyway + `validate` (B.7) |
-| `utilityHelper` lowercase class name | [utils/](../src/main/java/com/app/tradebot/utils/) | `JsonUtils`; make the class `final` with a private constructor |
+| `utilityHelper` lowercase class name | [utils/](../src/main/java/com/app/algodesk/utils/) | `JsonUtils`; make the class `final` with a private constructor |
 | No tests beyond `contextLoads` | `src/test/` | See [B.11](#b11-testing) |
-| `csrf().disable()` globally | [SecurityConfig.java:24](../src/main/java/com/app/tradebot/authentication/SecurityConfig.java#L24) | Acceptable for a token-authenticated JSON API; **not** acceptable while auth is cookie/session based |
+| `csrf().disable()` globally | [SecurityConfig.java:24](../src/main/java/com/app/algodesk/authentication/SecurityConfig.java#L24) | Acceptable for a token-authenticated JSON API; **not** acceptable while auth is cookie/session based |
 
 ---
 
@@ -134,8 +134,8 @@ Pick one — see [B.3](#b3-authentication--session).
 ## B.2 Package layout
 
 ```
-com.app.tradebot
-├── TradeBotApplication
+com.app.algodesk
+├── AlgoDeskApplication
 ├── config/               Spring @Configuration, @ConfigurationProperties, RestClient beans
 ├── broker/               ── Kite adapter (the ONLY package importing Kite types) ──
 │   ├── auth/               KiteAuthService, KiteSessionManager, token store

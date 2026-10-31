@@ -1,0 +1,36 @@
+package com.app.algodesk.controller;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+// Serves the UI pages. Each page loads its data from the matching /api/** endpoint.
+@RestController
+public class PageController {
+
+    @GetMapping(value = "/dashboard", produces = MediaType.TEXT_HTML_VALUE)
+    public Resource dashboard() {
+        return page("dashboard");
+    }
+
+    @GetMapping(value = "/orders", produces = MediaType.TEXT_HTML_VALUE)
+    public Resource orders() {
+        return page("orders");
+    }
+
+    @GetMapping(value = "/holdings", produces = MediaType.TEXT_HTML_VALUE)
+    public Resource holdings() {
+        return page("holdings");
+    }
+
+    @GetMapping(value = "/positions", produces = MediaType.TEXT_HTML_VALUE)
+    public Resource positions() {
+        return page("positions");
+    }
+
+    private static Resource page(String name) {
+        return new ClassPathResource("static/" + name + ".html");
+    }
+}

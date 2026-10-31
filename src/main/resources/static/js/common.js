@@ -14,7 +14,7 @@ function renderNav() {
         `<a href="${item.href}" class="${item.page === current ? "active" : ""}">${item.label}</a>`
     ).join("");
     document.getElementById("app-nav").innerHTML = `
-        <a class="brand" href="/dashboard">TradeBot</a>
+        <a class="brand" href="/dashboard">AlgoDesk</a>
         <nav>${links}</nav>`;
 }
 

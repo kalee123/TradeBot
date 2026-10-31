@@ -1,6 +1,6 @@
 # Kite Connect — Authentication Flow
 
-This document describes the end-to-end authentication flow used by **TradeBot** to log a user in via Zerodha Kite Connect, exchange tokens, persist them, and use them for subsequent API calls.
+This document describes the end-to-end authentication flow used by **AlgoDesk** to log a user in via Zerodha Kite Connect, exchange tokens, persist them, and use them for subsequent API calls.
 
 ---
 
@@ -8,14 +8,14 @@ This document describes the end-to-end authentication flow used by **TradeBot** 
 
 ```
 ┌────────┐   /login    ┌────────────┐   redirect   ┌──────────────┐
-│ Client │ ──────────▶ │ TradeBot   │ ───────────▶ │ Kite Login   │
+│ Client │ ──────────▶ │ AlgoDesk   │ ───────────▶ │ Kite Login   │
 │        │             │ /login     │              │ (kite.trade) │
 └────────┘             └────────────┘              └──────┬───────┘
                                                           │ user logs in
                                                           ▼
 ┌────────┐  JWT/Session ┌────────────┐  request_token ┌──────────────┐
 │ Client │ ◀──────────── │ /kite/     │ ◀──────────── │ Kite redirect│
-│        │               │ callback   │                │ to TradeBot  │
+│        │               │ callback   │                │ to AlgoDesk  │
 └────────┘               └─────┬──────┘                └──────────────┘
                                │
                                ▼
@@ -39,7 +39,7 @@ This document describes the end-to-end authentication flow used by **TradeBot** 
 ## 2. Step-by-Step Flow
 
 ### Step 1 — User hits `/login`
-- TradeBot generates a random `state` (UUID) for CSRF protection.
+- AlgoDesk generates a random `state` (UUID) for CSRF protection.
 - Stores it in `HttpSession` under `FieldConstants.FIELD_KIETE_STATE`.
 - Builds the Kite login URL:
   ```
@@ -181,20 +181,20 @@ All services (`OrderService`, `MarketDataService`, etc.) should consume this fac
 ## 7. Sequence Diagram (textual)
 
 ```
-Client → TradeBot:        GET /login
-TradeBot → Client:        302 → kite.zerodha.com/connect/login?...&state=S
+Client → AlgoDesk:        GET /login
+AlgoDesk → Client:        302 → kite.zerodha.com/connect/login?...&state=S
 Client → Kite:            login + 2FA
 Kite → Client:            302 → /kite/callback?request_token=R&state=S
-Client → TradeBot:        GET /kite/callback?request_token=R&state=S
-TradeBot → TradeBot:      validate state
-TradeBot → Kite API:      POST /session/token (request_token, api_secret)
-Kite API → TradeBot:      { access_token, public_token, user_id, ... }
-TradeBot → Kite API:      GET /user/profile
-Kite API → TradeBot:      { user_name, email, ... }
-TradeBot → DB:            upsert users
-TradeBot → DB:            deactivate old tokens, insert new auth_token
-TradeBot → TradeBot:      issue app JWT
-TradeBot → Client:        302 → /dashboard?token=JWT
+Client → AlgoDesk:        GET /kite/callback?request_token=R&state=S
+AlgoDesk → AlgoDesk:      validate state
+AlgoDesk → Kite API:      POST /session/token (request_token, api_secret)
+Kite API → AlgoDesk:      { access_token, public_token, user_id, ... }
+AlgoDesk → Kite API:      GET /user/profile
+Kite API → AlgoDesk:      { user_name, email, ... }
+AlgoDesk → DB:            upsert users
+AlgoDesk → DB:            deactivate old tokens, insert new auth_token
+AlgoDesk → AlgoDesk:      issue app JWT
+AlgoDesk → Client:        302 → /dashboard?token=JWT
 ```
 
 ---

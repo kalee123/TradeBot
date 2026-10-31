@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.app</groupId>
-    <artifactId>TradeBot</artifactId>
+    <artifactId>AlgoDesk</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>TradeBot</name>
-    <description>TradeBot</description>
+    <name>AlgoDesk</name>
+    <description>AlgoDesk</description>
     <url/>
     <licenses>
         <license/>

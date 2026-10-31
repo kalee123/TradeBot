@@ -1,4 +1,4 @@
-# TradeBot — Product & Build Guide
+# AlgoDesk — Product & Build Guide
 
 What the app *is*, screen by screen and feature by feature, and the domain rules you have to handle
 to make it safe.
@@ -159,7 +159,7 @@ Present on every screen. This is the "answer in five seconds" surface.
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────┐
-│ TradeBot   ● RUNNING    P&L today  +₹4,280 (+1.2%)   [PAPER]      ⛔ KILL      │
+│ AlgoDesk   ● RUNNING    P&L today  +₹4,280 (+1.2%)   [PAPER]      ⛔ KILL      │
 │            ○ socket ok · token ok · reconciled 12:44:02                        │
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -181,7 +181,7 @@ Present on every screen. This is the "answer in five seconds" surface.
 ```
 ┌────────────────────────────────────────────┐
 │                                            │
-│              TradeBot                      │
+│              AlgoDesk                      │
 │                                            │
 │   Your Kite session expires each morning.  │
 │   Log in before 09:00 IST to trade today.  │
