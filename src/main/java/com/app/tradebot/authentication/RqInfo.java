@@ -44,7 +44,6 @@ public class RqInfo {
         return userId != null;
     }
 
-    // Loaded from DB on first use only, then reused for the rest of the request
     public String getAccessToken() {
         if (accessToken == null) {
             if (userId == null) {

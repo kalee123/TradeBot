@@ -5,6 +5,7 @@ import com.app.tradebot.appsetup.UrlConstants;
 import com.app.tradebot.authentication.UserAuthService;
 import com.app.tradebot.broker.kite.KiteApiClient;
 import com.app.tradebot.entity.AuthTokenEntity;
+import com.app.tradebot.utils.ApiClientUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +26,6 @@ public class AuthController {
 
     @Autowired
     UserAuthService userAuthService;
-
-    @Autowired
-    KiteApiClient kiteApiClient;
 
     @GetMapping("/login")
     @ResponseBody
@@ -72,19 +70,5 @@ public class AuthController {
 
     private static ResponseEntity<String> redirect(String location) {
         return ResponseEntity.status(302).header(HttpHeaders.LOCATION, location).build();
-    }
-
-    @GetMapping("/dashboard")
-    @ResponseBody
-    public String dashBoard(HttpSession session) {
-        Long userId = (Long) session.getAttribute(FieldConstants.FIELD_USER_ID);
-
-        Optional<String> token = userAuthService.getActiveAccessToken(userId);
-        try {
-            String profileJson = kiteApiClient.get(UrlConstants.KITE_USER_PROFILE_PATH, token.get());
-            return profileJson;
-        } catch (Exception e) {
-            return "Could not load profile";
-        }
     }
 }
