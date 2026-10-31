@@ -1,18 +1,22 @@
 package com.app.tradebot.controller;
 
 import com.app.tradebot.appsetup.FieldConstants;
+import com.app.tradebot.appsetup.UrlConstants;
 import com.app.tradebot.authentication.UserAuthService;
+import com.app.tradebot.broker.kite.KiteApiClient;
 import com.app.tradebot.entity.AuthTokenEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -21,6 +25,9 @@ public class AuthController {
 
     @Autowired
     UserAuthService userAuthService;
+
+    @Autowired
+    KiteApiClient kiteApiClient;
 
     @GetMapping("/login")
     @ResponseBody
@@ -34,13 +41,20 @@ public class AuthController {
     @GetMapping("/kite/callback")
     public ResponseEntity<String> callback(String request_token, String state, HttpServletRequest request) {
         HttpSession session = request.getSession();
+
+        // Already logged in (refresh, back button, bookmarked callback URL) -> just go to the dashboard
+        if (Boolean.TRUE.equals(session.getAttribute(FieldConstants.FIELD_USER_AUTH))) {
+            return redirect("/dashboard");
+        }
+
         String saved = (String) session.getAttribute(FieldConstants.FIELD_KIETE_STATE);
         session.removeAttribute(FieldConstants.FIELD_KIETE_STATE);
         if (saved == null || !saved.equals(state)) {
-            return ResponseEntity.badRequest().body("Invalid state");
+            // Stale or replayed callback: start a fresh login instead of showing an error
+            return redirect("/login");
         }
         if (request_token == null || request_token.isBlank()) {
-            return ResponseEntity.badRequest().body("Missing request_token");
+            return redirect("/login");
         }
         try {
             AuthTokenEntity token = userAuthService.authenticateUser(request_token);
@@ -50,18 +64,27 @@ public class AuthController {
             session.setAttribute(FieldConstants.FIELD_USER_AUTH, true);
             session.setAttribute(FieldConstants.FIELD_USER_ID, token.getUser().getUserId());
             session.setAttribute(FieldConstants.FIELD_TOKEN_EXPIRES_AT, token.getExpiresAt());
-            return ResponseEntity.ok("Authentication successful");
+            return redirect("/dashboard");
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Authentication failed: " + e.getMessage());
+            return ResponseEntity.status(500).body("Authentication failed");
         }
+    }
+
+    private static ResponseEntity<String> redirect(String location) {
+        return ResponseEntity.status(302).header(HttpHeaders.LOCATION, location).build();
     }
 
     @GetMapping("/dashboard")
     @ResponseBody
-    public ResponseEntity<Void> dashBoard(HttpSession session) {
-        String state = UUID.randomUUID().toString();
-        session.setAttribute(FieldConstants.FIELD_KIETE_STATE, state);
-        String url = userAuthService.getLoginUrl(state);
-        return ResponseEntity.status(302).header(HttpHeaders.LOCATION, url).build();
+    public String dashBoard(HttpSession session) {
+        Long userId = (Long) session.getAttribute(FieldConstants.FIELD_USER_ID);
+
+        Optional<String> token = userAuthService.getActiveAccessToken(userId);
+        try {
+            String profileJson = kiteApiClient.get(UrlConstants.KITE_USER_PROFILE_PATH, token.get());
+            return profileJson;
+        } catch (Exception e) {
+            return "Could not load profile";
+        }
     }
 }
