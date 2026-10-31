@@ -21,6 +21,16 @@ It starts with the basics — logging in through Kite, viewing your account, ord
 - Rule-based strategies with paper trading mode
 - Risk controls (max loss per day, kill switch)
 
+## Screenshots
+
+**Dashboard:** profile and margins
+
+![Dashboard](docs/images/dashboard.png)
+
+**Holdings:** portfolio summary and holdings table
+
+![Holdings](docs/images/holdings.png)
+
 ## Tech stack
 
 | Layer | Technology |
@@ -76,21 +86,17 @@ src/main/resources/static/
   `http://localhost:8080/kite/callback`
 
 ### Configure
-Set your database and Kite app details in `src/main/resources/application.yml`:
+Secrets are read from environment variables, so `application.yml` never contains real values. Set these before running (in your shell or your IDE's run configuration):
 
-```yaml
-kite:
-  api-key: <your api key>
-  api-secret: <your api secret>
+| Variable | Value |
+|---|---|
+| `KITE_API_KEY` | API key of your Kite Connect app |
+| `KITE_API_SECRET` | API secret of your Kite Connect app |
+| `DB_USERNAME` | PostgreSQL user (defaults to `root`) |
+| `DB_PASSWORD` | PostgreSQL password |
 
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/trade_db?currentSchema=tradedb
-    username: <db user>
-    password: <db password>
-```
-
-Keep real keys and passwords out of git — use environment variables or a local, git-ignored config file.
+The database URL is in `src/main/resources/application.yml`
+(`jdbc:postgresql://localhost:5432/trade_db?currentSchema=tradedb` by default).
 
 ### Run
 

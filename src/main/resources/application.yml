@@ -1,12 +1,12 @@
 kite:
-  api-key: 1av6cdzewa20eypy
-  api-secret: p6ggvfij4ulpf41hl2kax8xi8x92r2xv
+  api-key: ${KITE_API_KEY}
+  api-secret: ${KITE_API_SECRET}
   user-id: QEX463
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/trade_db?currentSchema=tradedb
-    username: root
-    password: ""
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update     # use 'validate' once schema is stable
