@@ -18,6 +18,12 @@ import java.util.List;
 @Component
 public class SessionAuthFilter extends OncePerRequestFilter {
 
+    private final RqInfo rqInfo;
+
+    public SessionAuthFilter(RqInfo rqInfo) {
+        this.rqInfo = rqInfo;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -44,12 +50,18 @@ public class SessionAuthFilter extends OncePerRequestFilter {
         }
 
         if (!auth) {
-            response.sendRedirect("/login");
+            // API calls come from page scripts, which can't follow a redirect to Kite's login page
+            if (path.startsWith("/api/")) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            } else {
+                response.sendRedirect("/login");
+            }
             return;
         }
 
         // Tell Spring Security who the caller is, otherwise .authenticated() rejects the request
         Long userId = (Long) session.getAttribute(FieldConstants.FIELD_USER_ID);
+        rqInfo.setUserId(userId);
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken(userId, null, List.of()));
 
