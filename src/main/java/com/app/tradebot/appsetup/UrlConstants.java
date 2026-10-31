@@ -16,4 +16,10 @@ public class UrlConstants {
 
     public static final String KITE_USER_MARGINS_PATH = "/user/margins";
 
+    public static final String KITE_ORDERS_PATH = "/orders";
+
+    public static final String KITE_HOLDINGS_PATH = "/portfolio/holdings";
+
+    public static final String KITE_POSITIONS_PATH = "/portfolio/positions";
+
 }

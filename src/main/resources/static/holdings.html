@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holdings · TradeBot</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-page="holdings">
+<header id="app-nav" class="navbar"></header>
+
+<main>
+    <h1 class="page-title">Holdings</h1>
+    <div id="status" class="status">Loading…</div>
+    <div id="content" hidden>
+        <div class="grid summary">
+            <section class="card">
+                <p class="label">Invested</p>
+                <div class="big" id="total-invested"></div>
+            </section>
+            <section class="card">
+                <p class="label">Current value</p>
+                <div class="big" id="total-current"></div>
+            </section>
+            <section class="card">
+                <p class="label">Total P&amp;L</p>
+                <div class="big" id="total-pnl"></div>
+            </section>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Instrument</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Avg. cost</th>
+                    <th class="num">LTP</th>
+                    <th class="num">Cur. value</th>
+                    <th class="num">P&amp;L</th>
+                    <th class="num">Day chg.</th>
+                </tr>
+                </thead>
+                <tbody id="holdings-body"></tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/holdings.js"></script>
+</body>
+</html>

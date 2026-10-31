@@ -1,5 +1,6 @@
 package com.app.tradebot.broker.kite;
 
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.net.HttpURLConnection;
@@ -31,6 +32,11 @@ public class KiteApiClient {
 
         String response = connectionParser(conn);
         return response;
+    }
+
+    // Kite wraps every response as {"status": "...", "data": ...}; return only the data part
+    public String getData(String path, String accessToken) throws Exception {
+        return new JSONObject(get(path, accessToken)).get("data").toString();
     }
 
     public String connectionParser(HttpURLConnection conn) throws Exception {

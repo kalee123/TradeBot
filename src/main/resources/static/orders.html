@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orders · TradeBot</title>
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-page="orders">
+<header id="app-nav" class="navbar"></header>
+
+<main>
+    <h1 class="page-title">Orders <span class="muted" style="font-size:14px;font-weight:400">· today</span></h1>
+    <div id="status" class="status">Loading…</div>
+    <div id="content" hidden>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Instrument</th>
+                    <th>Product</th>
+                    <th class="num">Qty</th>
+                    <th class="num">Avg. price</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="orders-body"></tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<script src="/js/common.js"></script>
+<script src="/js/orders.js"></script>
+</body>
+</html>
